@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>Фильтрация заявок: Освещение и СМР</title>
+
+<!-- SheetJS (включает поддержку старых кодировок, CP1251) -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+
+<style>
+  :root{
+    --bg:#0b1020; --card:#121a34; --muted:#a9b4d6; --text:#eef3ff;
+    --accent:#00B4F0; --accent-2:#4AC7F3; --ok:#22c55e; --warn:#f59e0b;
+    --error:#ef4444; --chip:#1e293b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:linear-gradient(180deg,#0b1020,#0a0f1e 40%,#0b1020);
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+    color:var(--text)}
+  .wrap{max-width:1100px;margin:0 auto;padding:16px}
+  header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin:6px 0 16px}
+  .title{font-weight:800;letter-spacing:.2px;font-size:20px}
+  .subtitle{color:var(--muted);font-size:13px}
+  .card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:14px}
+  .grid{display:grid;grid-template-columns:1fr;gap:12px}
+  @media(min-width:900px){.grid{grid-template-columns: 1.1fr .9fr}}
+  .drop{border:1.5px dashed rgba(255,255,255,0.18);border-radius:12px;padding:16px;text-align:center;cursor:pointer}
+  .drop:hover{border-color:var(--accent)}
+  .muted{color:var(--muted)}
+  .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .btn{appearance:none;border:1px solid rgba(255,255,255,.15);background:#0f172a;color:var(--text);
+    padding:9px 12px;border-radius:10px;font-weight:600;cursor:pointer}
+  .btn.primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#001018;border:none}
+  .btn.ghost{background:transparent}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{background:var(--chip);border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:6px 10px;font-size:12px;color:var(--muted)}
+  select, .select{background:#0f172a;border:1px solid rgba(255,255,255,.12);border-radius:10px;color:var(--text);padding:9px 12px}
+  table{width:100%;border-collapse:collapse;border-spacing:0}
+  th,td{border-bottom:1px solid rgba(255,255,255,.06);padding:8px;vertical-align:top}
+  th{position:sticky;top:0;background:#0c142d;z-index:1}
+  .tabs{display:flex;gap:6px;margin-top:8px;margin-bottom:8px}
+  .tabbtn{padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:#0f172a;cursor:pointer;color:var(--muted);font-weight:600}
+  .tabbtn.active{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#001018;border:none}
+  .note{font-size:12px;color:var(--muted)}
+  .footer{margin-top:16px;color:var(--muted);font-size:12px}
+  .counter{font-weight:800}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <div class="title">Реестр заявок: Освещение и СМР</div>
+        <div class="subtitle">Загрузите несколько CSV/XLSX — получите отфильтрованные реестры и выгрузки</div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Левая колонка: Загрузка и управление -->
+      <section class="card">
+        <div class="row" style="justify-content:space-between;align-items:flex-start">
+          <div class="muted">Шаг 1</div>
+          <div class="note">Данные обрабатываются <b>локально</b>, никуда не отправляются</div>
+        </div>
+
+        <label for="file" class="drop" id="drop">
+          <input id="file" type="file" accept=".csv,.xlsx,.xls" multiple style="display:none" />
+          <div><b>Перетащите файлы</b> сюда или <u>нажмите для выбора</u></div>
+          <div class="note" style="margin-top:6px">Поддерживаются CSV (в т.ч. CP1251) и Excel (XLSX). Можно выбрать сразу все выгрузки.</div>
+        </label>
+
+        <div class="row" style="margin-top:12px;gap:10px">
+          <div class="muted">Столбец с наименованием закупки:</div>
+          <select id="nameColSelect"></select>
+          <button class="btn" id="rescanBtn" title="Переопределить столбец после выбора">Обновить</button>
+        </div>
+
+        <div style="margin-top:10px" class="chips" id="fileChips"></div>
+
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,.06);margin:12px 0" />
+
+        <div class="row">
+          <button class="btn primary" id="analyzeBtn" disabled>Проанализировать</button>
+          <span class="note">Шаг 2. Автофильтры:</span>
+          <span class="chip">Освещение: содержит «наруж»</span>
+          <span class="chip">СМР: «КЛ-» / «ВЛ-» / «БКТП» / «ТП» (без «ОТПУ…»)</span>
+        </div>
+
+        <div id="stats" style="margin-top:10px;display:none">
+          <div class="chips">
+            <div class="chip">Всего строк: <span id="allCount" class="counter">0</span></div>
+            <div class="chip">Освещение: <span id="lightCount" class="counter">0</span></div>
+            <div class="chip">СМР: <span id="smrCount" class="counter">0</span></div>
+            <div class="chip">Итого (уник.): <span id="totalCount" class="counter">0</span></div>
+          </div>
+        </div>
+
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,.06);margin:12px 0;display:none" id="dlSeparator" />
+
+        <div id="downloadRow" class="row" style="display:none">
+          <button class="btn" id="dlXlsx">Скачать XLSX (3 листа)</button>
+          <button class="btn ghost" id="dlCsvLight">Освещение CSV</button>
+          <button class="btn ghost" id="dlCsvSmr">СМР CSV</button>
+          <button class="btn ghost" id="dlCsvAll">Итого CSV</button>
+        </div>
+      </section>
+
+      <!-- Правая колонка: Превью -->
+      <section class="card">
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <div class="muted">Шаг 3</div>
+          <div class="note">Показаны первые 150 строк для предварительного просмотра</div>
+        </div>
+
+        <div class="tabs">
+          <button class="tabbtn active" data-tab="light">Освещение</button>
+          <button class="tabbtn" data-tab="smr">СМР</button>
+          <button class="tabbtn" data-tab="all">Итого</button>
+        </div>
+
+        <div id="previewLight" class="preview"></div>
+        <div id="previewSmr" class="preview" style="display:none"></div>
+        <div id="previewAll" class="preview" style="display:none"></div>
+      </section>
+    </div>
+
+    <div class="footer">
+      Подсказки:
+      • Если авто-поиск не нашёл «Наименование закупки», выберите нужный столбец в списке и нажмите «Обновить».
+      • Дубли из разных файлов автоматически удаляются по полному совпадению строки.
+    </div>
+  </div>
+
+<script>
+(() => {
+  // =============== Состояние ===============
+  const state = {
+    files: [],
+    rows: [],             // все строки (объекты)
+    headers: [],          // порядок колонок
+    nameCol: null,        // ключ колонки с наименованием закупки
+    filtered: { light: [], smr: [], all: [] }
+  };
+
+  // =============== DOM ===============
+  const fileInput = document.getElementById('file');
+  const drop = document.getElementById('drop');
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  const rescanBtn = document.getElementById('rescanBtn');
+  const fileChips = document.getElementById('fileChips');
+  const nameColSelect = document.getElementById('nameColSelect');
+
+  const stats = document.getElementById('stats');
+  const allCount = document.getElementById('allCount');
+  const lightCount = document.getElementById('lightCount');
+  const smrCount = document.getElementById('smrCount');
+  const totalCount = document.getElementById('totalCount');
+  const dlSeparator = document.getElementById('dlSeparator');
+  const dlRow = document.getElementById('downloadRow');
+
+  const dlXlsx = document.getElementById('dlXlsx');
+  const dlCsvLight = document.getElementById('dlCsvLight');
+  const dlCsvSmr = document.getElementById('dlCsvSmr');
+  const dlCsvAll = document.getElementById('dlCsvAll');
+
+  const previews = {
+    light: document.getElementById('previewLight'),
+    smr: document.getElementById('previewSmr'),
+    all: document.getElementById('previewAll')
+  };
+
+  // Tabs
+  document.querySelectorAll('.tabbtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tabbtn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.dataset.tab;
+      Object.keys(previews).forEach(k => previews[k].style.display = (k === tab) ? '' : 'none');
+    });
+  });
+
+  // =============== Утилиты ===============
+  function uniqueByRowString(rows, headers) {
+    const seen = new Set();
+    const out = [];
+    for (const r of rows) {
+      const key = headers.map(h => (r[h] ?? '')).join('||');
+      if (!seen.has(key)) { seen.add(key); out.push(r); }
+    }
+    return out;
+  }
+
+  function detectNameColumn(headers) {
+    // Ищем колонку, содержащую «наименование закупки»
+    const target = ['наименование закупки','наименование закупки/лота','наименование лота'];
+    const norm = s => String(s||'').trim().toLowerCase();
+    for (const h of headers) {
+      const nh = norm(h);
+      if (target.some(t => nh.includes(t))) return h;
+    }
+    // Фолбэк: 4-я колонка (D), если есть
+    return headers[3] || headers[0];
+  }
+
+  function normalizeHeaders(rows) {
+    // Собираем порядок колонок по первому набору (или объединяем все?)
+    // Для реестров из ЕИС обычно однообразно. Оставим порядок первого файла.
+    if (!rows.length) return [];
+    return Object.keys(rows[0]);
+  }
+
+  function str(v){ return (v===undefined || v===null) ? '' : String(v); }
+
+  // Фильтры
+  function isLight(name) {
+    const s = str(name).toLocaleLowerCase('ru-RU');
+    return s.includes('наруж');
+  }
+  function isSmr(name) {
+    const S = str(name).toLocaleUpperCase('ru-RU');
+    // КЛ-, ВЛ-, БКТП, ТП (без ОТПУ…)
+    if (S.includes('КЛ-')) return true;
+    if (S.includes('ВЛ-')) return true;
+    if (S.includes('БКТП')) return true;
+    if (S.includes('ТП') && !S.includes('ОТПУ')) return true; // исключаем «ОТПУ…» (отпуск/отпускн…)
+    return false;
+  }
+
+  function renderChips(files) {
+    fileChips.innerHTML = '';
+    files.forEach(f => {
+      const div = document.createElement('div');
+      div.className = 'chip';
+      const size = (f.size/1024/1024).toFixed(2)+' МБ';
+      div.textContent = `${f.name} · ${size}`;
+      fileChips.appendChild(div);
+    });
+  }
+
+  function fillNameColSelect(headers, selected) {
+    nameColSelect.innerHTML = '';
+    headers.forEach(h => {
+      const opt = document.createElement('option');
+      opt.value = h;
+      opt.textContent = h;
+      if (h === selected) opt.selected = true;
+      nameColSelect.appendChild(opt);
+    });
+  }
+
+  function renderTable(el, rows, headers, limit=150) {
+    el.innerHTML = '';
+    if (!rows.length) { el.innerHTML = '<div class="note">Нет данных</div>'; return; }
+    const tbl = document.createElement('table');
+    const thead = document.createElement('thead');
+    const trh = document.createElement('tr');
+    headers.forEach(h => {
+      const th = document.createElement('th'); th.textContent = h; trh.appendChild(th);
+    });
+    thead.appendChild(trh); tbl.appendChild(thead);
+    const tbody = document.createElement('tbody');
+    rows.slice(0, limit).forEach(r => {
+      const tr = document.createElement('tr');
+      headers.forEach(h => {
+        const td = document.createElement('td');
+        const v = r[h];
+        td.textContent = (v===undefined||v===null) ? '' : String(v);
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    tbl.appendChild(tbody);
+    el.appendChild(tbl);
+    if (rows.length > limit) {
+      const note = document.createElement('div');
+      note.className = 'note';
+      note.style.marginTop = '6px';
+      note.textContent = `Показаны первые ${limit} строк из ${rows.length}. Для полного списка — скачайте файл.`;
+      el.appendChild(note);
+    }
+  }
+
+  function aoaFromRows(rows, headers) {
+    const aoa = [headers];
+    rows.forEach(r => aoa.push(headers.map(h => r[h] ?? '')));
+    return aoa;
+  }
+
+  function downloadCSV(rows, headers, filename) {
+    const sep = ';';
+    const escape = (v) => {
+      const s = String(v ?? '');
+      const need = s.includes('"') || s.includes('\n') || s.includes('\r') || s.includes(sep);
+      return need ? `"${s.replace(/"/g,'""')}"` : s;
+    };
+    const lines = [ headers.map(escape).join(sep) ];
+    rows.forEach(r => lines.push(headers.map(h => escape(r[h])).join(sep)));
+    const blob = new Blob([lines.join('\r\n')], {type:'text/csv;charset=utf-8;'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename.endsWith('.csv') ? filename : (filename + '.csv');
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  }
+
+  function downloadXLSX(sheets, filename) {
+    const wb = XLSX.utils.book_new();
+    for (const [sheetName, {rows, headers}] of Object.entries(sheets)) {
+      const aoa = aoaFromRows(rows, headers);
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    }
+    XLSX.writeFile(wb, filename.endsWith('.xlsx') ? filename : (filename + '.xlsx'));
+  }
+
+  // =============== Парсинг ===============
+  async function readFile(file) {
+    const data = await file.arrayBuffer();
+    const name = file.name.toLowerCase();
+    // Обрабатываем и CSV, и XLSX одним способом через SheetJS
+    const wb = XLSX.read(data, {type:'array', codepage: 1251}); // codepage важен для CP1251
+    const sheetName = wb.SheetNames[0];
+    const ws = wb.Sheets[sheetName];
+    // Попытаемся преобразовать в массив объектов. SheetJS сам возьмёт заголовки из первой строки.
+    const rows = XLSX.utils.sheet_to_json(ws, {defval:'', raw:false});
+    return rows;
+  }
+
+  async function handleFiles(fileList) {
+    state.files = Array.from(fileList || []);
+    if (!state.files.length) return;
+
+    renderChips(state.files);
+    analyzeBtn.disabled = true;
+
+    // Читаем все файлы по очереди
+    const allRows = [];
+    for (const f of state.files) {
+      try {
+        const part = await readFile(f);
+        // если у файла совсем нет строк — пропускаем
+        if (part && part.length) allRows.push(...part);
+      } catch (e) {
+        console.error('Ошибка чтения', f.name, e);
+        alert(`Не удалось прочитать файл: ${f.name}`);
+      }
+    }
+
+    if (!allRows.length) {
+      alert('Не удалось извлечь данные из файлов. Проверьте формат.');
+      return;
+    }
+
+    // Порядок колонок — по первому ряду (как есть в исходнике).
+    state.headers = normalizeHeaders(allRows);
+
+    // Автодетект колонки с наименованием
+    state.nameCol = detectNameColumn(state.headers);
+    fillNameColSelect(state.headers, state.nameCol);
+
+    state.rows = allRows;
+    analyzeBtn.disabled = false;
+  }
+
+  // =============== Анализ ===============
+  function analyze() {
+    if (!state.rows.length) return;
+    // Обновить имя колонки, если пользователь поменял селектор
+    state.nameCol = nameColSelect.value || state.nameCol;
+
+    // Фильтрация
+    const light = [];
+    const smr = [];
+
+    for (const r of state.rows) {
+      const name = r[state.nameCol];
+      if (isLight(name)) light.push(r);
+      if (isSmr(name)) smr.push(r);
+    }
+
+    // Уникальность и итог
+    const lightU = uniqueByRowString(light, state.headers);
+    const smrU = uniqueByRowString(smr, state.headers);
+    const allU = uniqueByRowString([...lightU, ...smrU], state.headers);
+
+    state.filtered = { light: lightU, smr: smrU, all: allU };
+
+    // Статистика
+    stats.style.display = '';
+    allCount.textContent = String(state.rows.length);
+    lightCount.textContent = String(lightU.length);
+    smrCount.textContent = String(smrU.length);
+    totalCount.textContent = String(allU.length);
+
+    // Превью
+    renderTable(previews.light, lightU, state.headers, 150);
+    renderTable(previews.smr, smrU, state.headers, 150);
+    renderTable(previews.all, allU, state.headers, 150);
+
+    // Кнопки выгрузки
+    dlSeparator.style.display = '';
+    dlRow.style.display = '';
+  }
+
+  // =============== Скачивание ===============
+  dlXlsx.addEventListener('click', () => {
+    const date = new Date().toISOString().slice(0,10);
+    downloadXLSX(
+      {
+        'Освещение': {rows: state.filtered.light, headers: state.headers},
+        'СМР':       {rows: state.filtered.smr,   headers: state.headers},
+        'Итого':     {rows: state.filtered.all,   headers: state.headers}
+      },
+      `Реестры_Освещение_СМР_${date}.xlsx`
+    );
+  });
+
+  dlCsvLight.addEventListener('click', () => {
+    const date = new Date().toISOString().slice(0,10);
+    downloadCSV(state.filtered.light, state.headers, `Освещение_${date}.csv`);
+  });
+  dlCsvSmr.addEventListener('click', () => {
+    const date = new Date().toISOString().slice(0,10);
+    downloadCSV(state.filtered.smr, state.headers, `СМР_${date}.csv`);
+  });
+  dlCsvAll.addEventListener('click', () => {
+    const date = new Date().toISOString().slice(0,10);
+    downloadCSV(state.filtered.all, state.headers, `Итого_${date}.csv`);
+  });
+
+  // =============== Слушатели ===============
+  drop.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', e => handleFiles(e.target.files));
+
+  // DnD
+  ;['dragenter','dragover'].forEach(evt => drop.addEventListener(evt, e => {e.preventDefault(); e.stopPropagation(); drop.style.borderColor='var(--accent)';}));
+  ;['dragleave','drop'].forEach(evt => drop.addEventListener(evt, e => {e.preventDefault(); e.stopPropagation(); drop.style.borderColor='rgba(255,255,255,0.18)';}));
+  drop.addEventListener('drop', e => {
+    const items = e.dataTransfer.files;
+    handleFiles(items);
+  });
+
+  analyzeBtn.addEventListener('click', analyze);
+  rescanBtn.addEventListener('click', analyze);
+})();
+</script>
+</body>
+</html>
