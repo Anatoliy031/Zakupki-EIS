@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>Анализатор закупок — фильтрация и поиск</title>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
@@ -14,126 +14,168 @@
     }
     body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px}
     .container{max-width:1400px;margin:0 auto}
-    .header{background:#fff;border-radius:20px;padding:30px;box-shadow:0 20px 25px -5px rgba(0,0,0,.1);margin-bottom:30px;animation:slideDown .5s ease-out}
-    @keyframes slideDown{from{opacity:0;transform:translateY(-30px)}to{opacity:1;transform:translateY(0)}}
-    h1{color:var(--dark);font-size:2.2rem;margin-bottom:10px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .header,.upload-section,.filters-section,.results-section{background:#fff;border-radius:20px;padding:24px;box-shadow:0 20px 25px -5px rgba(0,0,0,.08);margin-bottom:20px}
+    h1{font-size:2.1rem;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
     .subtitle{color:#6b7280}
-    .upload-section{background:#fff;border-radius:20px;padding:30px;box-shadow:0 20px 25px -5px rgba(0,0,0,.1);margin-bottom:30px}
-    .upload-area{border:3px dashed var(--border);border-radius:15px;padding:40px;text-align:center;transition:all .3s ease;cursor:pointer;background:linear-gradient(145deg,#f9fafb,#fff)}
-    .upload-area:hover{border-color:var(--primary);background:linear-gradient(145deg,#eff6ff,#fff);transform:translateY(-2px)}
-    .upload-area.dragover{border-color:var(--secondary);background:linear-gradient(145deg,#d1fae5,#fff)}
-    .upload-icon{font-size:3rem;color:var(--primary);margin-bottom:15px}
+    .upload-area{border:3px dashed var(--border);border-radius:15px;padding:28px;text-align:center;transition:.2s;cursor:pointer;background:linear-gradient(145deg,#f9fafb,#fff)}
+    .upload-area:hover{border-color:var(--primary);transform:translateY(-1px)}
+    .upload-icon{font-size:2.6rem;color:var(--primary);margin-bottom:10px}
     .file-input{display:none}
-    .files-list{margin-top:20px;list-style:none}
-    .file-item{background:var(--light);padding:15px;margin:10px 0;border-radius:10px;display:flex;justify-content:space-between;align-items:center}
-    .file-info{display:flex;gap:15px;align-items:center}
+    .files-list{list-style:none;margin-top:12px}
+    .file-item{background:var(--light);padding:10px 12px;margin:8px 0;border-radius:10px;display:flex;justify-content:space-between;align-items:center}
     .remove-file{background:var(--danger);color:#fff;border:none;padding:6px 10px;border-radius:8px;cursor:pointer}
-    .filters-section{background:#fff;border-radius:20px;padding:30px;box-shadow:0 20px 25px -5px rgba(0,0,0,.1);margin-bottom:30px}
-    .filter-buttons{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
-    .filter-btn{padding:12px 18px;border:none;border-radius:10px;font-weight:600;cursor:pointer}
+    .filter-buttons{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+    .filter-btn{padding:10px 14px;border:none;border-radius:10px;font-weight:600;cursor:pointer}
     .filter-btn.primary{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff}
     .filter-btn.secondary{background:linear-gradient(135deg,var(--secondary),var(--secondary-dark));color:#fff}
     .filter-btn.warning{background:linear-gradient(135deg,var(--warning),#dc2626);color:#fff}
-    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:10px}
-    .stat-card{background:linear-gradient(145deg,#f9fafb,#fff);padding:16px;border-radius:12px;border:1px solid var(--border)}
-    .stat-value{font-size:1.6rem;font-weight:800;color:var(--dark)}
-    .stat-label{color:#6b7280}
-    .keyword-search{margin-top:18px;padding:16px;border:1px dashed var(--border);border-radius:12px;background:linear-gradient(145deg,#fafafa,#fff)}
-    .keyword-input{width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:1rem}
-    .keyword-input + .keyword-input{margin-top:10px}
-    .kw-controls{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;align-items:center}
-    .kw-columns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:8px}
+    .stat-card{background:linear-gradient(145deg,#f9fafb,#fff);padding:14px;border-radius:12px;border:1px solid var(--border)}
+    .stat-value{font-size:1.4rem;font-weight:800}
+    .keyword-search{margin-top:12px;padding:14px;border:1px dashed var(--border);border-radius:12px;background:linear-gradient(145deg,#fafafa,#fff)}
+    .section-title{font-weight:700;margin-bottom:6px}
+    .keyword-input{width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:1rem}
+    .keyword-input + .keyword-input{margin-top:8px}
+    .kw-columns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
     .kw-col{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--border);border-radius:999px;padding:6px 10px}
-    .results-section{background:#fff;border-radius:20px;padding:30px;box-shadow:0 20px 25px -5px rgba(0,0,0,.1);display:none}
-    .results-header{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
-    .search-input{flex:1;min-width:240px;padding:10px 14px;border:2px solid var(--border);border-radius:10px}
+    .kw-controls{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;align-items:center}
+    .presets{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+    .presets input[type="text"]{padding:8px 10px;border:2px solid var(--border);border-radius:10px;min-width:220px}
+    .results-header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px}
+    .search-input{flex:1;min-width:240px;padding:10px 12px;border:2px solid var(--border);border-radius:10px}
     .export-section{display:flex;gap:10px}
-    .table-container{overflow-x:auto;border-radius:12px}
+    .table-container{overflow:auto;border-radius:12px}
     table{width:100%;border-collapse:separate;border-spacing:0}
     th{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;padding:12px;position:sticky;top:0;cursor:pointer}
-    td{padding:12px;border-bottom:1px solid var(--border)}
+    td{padding:12px;border-bottom:1px solid var(--border);vertical-align:top}
     tr:nth-child(even){background:var(--light)}
-    .no-results{text-align:center;color:#6b7280;padding:30px}
-    .toast{position:fixed;bottom:30px;right:30px;padding:12px 16px;background:var(--dark);color:#fff;border-radius:10px;opacity:0;transform:translateY(20px);transition:all .25s;z-index:1000}
+    mark{background:#fff59d;padding:0 .2em;border-radius:4px}
+    .no-results{text-align:center;color:#6b7280;padding:22px}
+    .toast{position:fixed;bottom:24px;right:24px;padding:10px 14px;background:var(--dark);color:#fff;border-radius:10px;opacity:0;transform:translateY(20px);transition:all .25s;z-index:1000}
     .toast.show{opacity:1;transform:translateY(0)}
     .toast.success{background:var(--secondary)}
     .toast.error{background:var(--danger)}
+    .pivot{margin-top:14px;padding:12px;border:1px solid var(--border);border-radius:12px;background:#fafafa}
+    .pivot-controls{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px}
+    .pivot select{padding:8px 10px;border:2px solid var(--border);border-radius:10px}
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
       <h1>📊 Анализатор закупок</h1>
-      <p class="subtitle">Автоматическая фильтрация + продвинутый поиск по ключевым словам</p>
+      <p class="subtitle">Фильтры, продвинутый поиск, дедуп, экспорт и сводная аналитика</p>
     </div>
 
     <div class="upload-section">
-      <h2 style="margin-bottom: 14px;">📁 Загрузка файлов</h2>
+      <h2 style="margin-bottom:8px;">📁 Загрузка файлов</h2>
       <div class="upload-area" id="uploadArea">
         <div class="upload-icon">📤</div>
-        <p style="margin-bottom:6px;">Перетащите CSV файлы сюда</p>
-        <p style="color:#6b7280;">или</p>
-        <button class="filter-btn primary" style="margin-top:10px;">Выбрать файлы</button>
+        <p>Перетащите CSV-файлы сюда или</p>
+        <button class="filter-btn primary" style="margin-top:8px;">Выбрать файлы</button>
         <input type="file" id="fileInput" class="file-input" accept=".csv" multiple>
       </div>
       <ul class="files-list" id="filesList"></ul>
     </div>
 
     <div class="filters-section" id="filtersSection" style="display:none;">
-      <h2 style="margin-bottom: 10px;">🔍 Фильтры и анализ</h2>
+      <h2 style="margin-bottom:10px;">🔍 Фильтры и анализ</h2>
+
       <div class="filter-buttons">
         <button class="filter-btn primary"   onclick="applyFilter('street')">💡 Уличное освещение (наруж*)</button>
         <button class="filter-btn secondary" onclick="applyFilter('smr')">🔧 СМР (КЛ-, ВЛ-, ТП, БКТП)</button>
-        <button class="filter-btn warning"   onclick="applyFilter('all')">📋 Показать все записи</button>
+        <button class="filter-btn warning"   onclick="applyFilter('all')">📋 Показать все</button>
         <button class="filter-btn warning"   onclick="resetFilters()">🔄 Сбросить фильтры</button>
+        <button class="filter-btn secondary" onclick="deduplicate()">🧹 Удалить дубликаты</button>
       </div>
 
       <div class="stats" id="stats"></div>
 
       <!-- Поиск по ключевым словам -->
-      <div class="keyword-search" id="keywordSearch">
-        <h3 style="margin-bottom:6px;">🔎 Поиск по ключевым словам</h3>
+      <div class="keyword-search">
+        <div class="section-title">🔎 Поиск по ключевым словам</div>
 
-        <div id="keywordInputs">
-          <input type="text" class="keyword-input" placeholder="Введите ключевое слово или фразу">
+        <!-- Включающие слова -->
+        <div id="keywordInclude">
+          <input type="text" class="keyword-input" placeholder="Ключевое слово/фраза (включить)">
+        </div>
+        <div class="kw-controls">
+          <button class="filter-btn secondary" type="button" onclick="addKeywordField('include')">+ поле (включить)</button>
         </div>
 
-        <!-- Колонки для поиска -->
+        <!-- Исключающие слова -->
+        <div class="section-title" style="margin-top:6px;">🚫 Исключить слова (NOT)</div>
+        <div id="keywordExclude">
+          <input type="text" class="keyword-input" placeholder="Слово/фраза для исключения">
+        </div>
+        <div class="kw-controls">
+          <button class="filter-btn secondary" type="button" onclick="addKeywordField('exclude')">+ поле (исключить)</button>
+        </div>
+
+        <!-- Колонки -->
+        <div class="section-title" style="margin-top:6px;">Искать в колонках</div>
         <div id="kwColumns" class="kw-columns"></div>
 
+        <!-- Режимы поиска -->
         <div class="kw-controls">
-          <!-- Логика И/ИЛИ -->
-          <div>
-            <strong>Логика:</strong>
-            <label style="margin-left:8px;"><input type="radio" name="kwLogic" value="OR" checked> ИЛИ</label>
+          <div><strong>Логика:</strong>
+            <label style="margin-left:6px;"><input type="radio" name="kwLogic" value="OR" checked> ИЛИ</label>
             <label style="margin-left:8px;"><input type="radio" name="kwLogic" value="AND"> И</label>
           </div>
-
-          <!-- Строгое совпадение -->
           <label style="display:flex;align-items:center;gap:6px;">
             <input type="checkbox" id="kwStrict"> Строгое совпадение слов
           </label>
+          <label style="display:flex;align-items:center;gap:6px;">
+            <input type="checkbox" id="kwHighlight"> Подсветить совпадения
+          </label>
 
-          <!-- Кнопки -->
-          <button class="filter-btn secondary" id="addKeywordBtn"  type="button">Добавить поле</button>
-          <button class="filter-btn primary"   id="startSearchBtn" type="button">Запустить поиск</button>
+          <button class="filter-btn primary" type="button" onclick="performKeywordSearch()">🔎 Запустить поиск</button>
         </div>
+
+        <!-- Пресеты -->
+        <div class="presets">
+          <input id="presetName" type="text" placeholder="Название пресета (например: СМР+КЛ)" />
+          <button class="filter-btn secondary" type="button" onclick="savePreset()">💾 Сохранить пресет</button>
+          <select id="presetSelect"></select>
+          <button class="filter-btn secondary" type="button" onclick="loadPreset()">⤴ Загрузить</button>
+          <button class="filter-btn warning"   type="button" onclick="deletePreset()">🗑 Удалить</button>
+        </div>
+      </div>
+
+      <!-- Пивот-сводка -->
+      <div class="pivot">
+        <div class="section-title">📈 Пивот-сводка</div>
+        <div class="pivot-controls">
+          <div>
+            Группировать по:
+            <select id="pivotGroupBy"></select>
+          </div>
+          <div>
+            Значение (сумма):
+            <select id="pivotValue">
+              <option>Начальная (максимальная) цена контракта</option>
+            </select>
+          </div>
+          <button class="filter-btn secondary" type="button" onclick="buildPivot()">Построить сводку</button>
+        </div>
+        <div id="pivotTable"></div>
       </div>
     </div>
 
     <div class="results-section" id="resultsSection">
       <div class="results-header">
-        <h2>📈 Результаты фильтрации</h2>
+        <h2>📈 Результаты</h2>
         <input type="text" class="search-input" id="searchInput" placeholder="Поиск по показанным результатам...">
         <div class="export-section">
           <button class="filter-btn secondary" onclick="toggleColumnSelector()">⚙️ Настройки</button>
-          <button class="filter-btn secondary" onclick="exportToCSV()">💾 Скачать CSV</button>
+          <button class="filter-btn secondary" onclick="exportToCSV()">⬇️ CSV</button>
+          <button class="filter-btn secondary" onclick="exportToXLSX()">⬇️ XLSX</button>
         </div>
       </div>
 
       <div class="column-selector" id="columnSelector" style="display:none;">
-        <h3>Выберите колонки для отображения и экспорта:</h3>
-        <div class="columns-grid" id="columnsGrid"></div>
+        <h3>Колонки для отображения и экспорта</h3>
+        <div class="columns-grid" id="columnsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;"></div>
       </div>
 
       <div class="table-container">
@@ -144,14 +186,17 @@
       </div>
 
       <div class="no-results" id="noResults" style="display:none;">
-        <p style="font-size:1.1rem;">😕 Записи не найдены. Попробуйте изменить критерии.</p>
+        😕 Записи не найдены. Измените критерии.
       </div>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
 
+  <!-- libs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
   <script>
     let allData = [];
     let filteredData = [];
@@ -160,38 +205,34 @@
     let sortDirection = 'asc';
     let currentFilter = '';
 
-    // Колонки по умолчанию для поиска по ключевым словам (если есть в данных)
     const defaultKeywordColumns = [
       'Наименование закупки',
       'Описание',
       'Наименование Заказчика',
       'Место поставки'
     ];
-    let keywordSearchColumns = new Set(); // выбранные колонки для поиска (чипсы)
+    let keywordSearchColumns = new Set(); // выбранные колонки для поиска
 
     document.addEventListener('DOMContentLoaded', () => {
       const uploadArea = document.getElementById('uploadArea');
       const fileInput  = document.getElementById('fileInput');
 
       uploadArea.addEventListener('click', () => fileInput.click());
-      fileInput.addEventListener('change', handleFileSelect);
-
-      uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
-      uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
-      uploadArea.addEventListener('drop', (e) => { e.preventDefault(); uploadArea.classList.remove('dragover'); handleFiles(e.dataTransfer.files); });
+      fileInput.addEventListener('change', (e)=>handleFiles(e.target.files));
+      uploadArea.addEventListener('dragover',(e)=>{e.preventDefault();uploadArea.classList.add('dragover')});
+      uploadArea.addEventListener('dragleave',()=>uploadArea.classList.remove('dragover'));
+      uploadArea.addEventListener('drop',(e)=>{e.preventDefault();uploadArea.classList.remove('dragover');handleFiles(e.dataTransfer.files)});
 
       document.getElementById('searchInput').addEventListener('input', (e) => searchTable(e.target.value));
 
-      document.getElementById('addKeywordBtn').addEventListener('click', addKeywordField);
-      document.getElementById('startSearchBtn').addEventListener('click', performKeywordSearch);
+      // пресеты
+      hydratePresetSelect();
     });
-
-    function handleFileSelect(e){ handleFiles(e.target.files); }
 
     async function handleFiles(files){
       const filesList = document.getElementById('filesList');
       const filtersSection = document.getElementById('filtersSection');
-      showToast('Загрузка файлов...', 'info');
+      showToast('Загрузка...', 'info');
 
       for (let file of files){
         if (file.type === 'text/csv' || file.name.endsWith('.csv')){
@@ -199,7 +240,7 @@
           li.className = 'file-item';
           li.innerHTML = `
             <div class="file-info">
-              <span class="file-icon">📄</span>
+              <span>📄</span>
               <div>
                 <div style="font-weight:600;">${file.name}</div>
                 <div style="color:#6b7280;font-size:.9rem;">${(file.size/1024).toFixed(2)} КБ</div>
@@ -211,16 +252,16 @@
         }
       }
 
-      if (allData.length > 0){
+      if (allData.length){
         filtersSection.style.display = 'block';
-        updateStats();
+        currentFilter = 'all';
         setupColumns();
         setupKeywordColumnsChips();
-
-        currentFilter = 'all';
+        updateStats();
         filteredData = [...allData];
         displayResults(filteredData);
-        showToast('Файлы успешно загружены!', 'success');
+        hydratePivotSelectors();
+        showToast('Файлы загружены', 'success');
       }
     }
 
@@ -246,7 +287,7 @@
       const fileName = btn.getAttribute('data-file');
       allData = allData.filter(row => row['Источник'] !== fileName);
       btn.parentElement.remove();
-      if (allData.length === 0){
+      if (!allData.length){
         document.getElementById('filtersSection').style.display = 'none';
         document.getElementById('resultsSection').style.display = 'none';
       } else {
@@ -254,6 +295,7 @@
         filteredData = [...allData];
         displayResults(filteredData);
         setupKeywordColumnsChips();
+        hydratePivotSelectors();
       }
     }
 
@@ -273,7 +315,7 @@
                 String(name).includes('БКТП'));
       }).length;
 
-      const totalSum = allData.reduce((sum, row) => sum + (row['Начальная (максимальная) цена контракта'] || 0), 0);
+      const totalSum = allData.reduce((sum, row) => sum + (Number(row['Начальная (максимальная) цена контракта']) || 0), 0);
 
       document.getElementById('stats').innerHTML = `
         <div class="stat-card"><div class="stat-value">${allData.length}</div><div class="stat-label">Всего записей</div></div>
@@ -296,14 +338,24 @@
       selectedColumns.forEach(col => {
         const id = `col_${col.replace(/\s/g,'_')}`;
         const div = document.createElement('div');
-        div.className = 'column-checkbox';
-        div.innerHTML = `<input type="checkbox" id="${id}" value="${col}" checked onchange="updateSelectedColumns()">
-                         <label for="${id}">${col}</label>`;
+        div.innerHTML = `<label style="display:flex;gap:8px;align-items:center;padding:6px 8px;background:#fff;border:1px solid var(--border);border-radius:10px;">
+          <input type="checkbox" id="${id}" value="${col}" checked onchange="updateSelectedColumns()">
+          ${col}</label>`;
         grid.appendChild(div);
       });
     }
 
-    // Чипсы доступных колонок для поиска
+    function updateSelectedColumns(){
+      selectedColumns = [];
+      document.querySelectorAll('#columnsGrid input:checked').forEach(cb => selectedColumns.push(cb.value));
+      if (filteredData.length) displayResults(filteredData);
+    }
+
+    function toggleColumnSelector(){
+      const selector = document.getElementById('columnSelector');
+      selector.style.display = selector.style.display === 'none' ? 'block' : 'none';
+    }
+
     function setupKeywordColumnsChips(){
       const wrap = document.getElementById('kwColumns');
       wrap.innerHTML = '';
@@ -331,19 +383,8 @@
       if (keywordSearchColumns.size === 0){
         cb.checked = true;
         keywordSearchColumns.add(col);
-        showToast('Должна быть выбрана хотя бы одна колонка для поиска','error');
+        showToast('Нужна хотя бы одна колонка для поиска','error');
       }
-    }
-
-    function updateSelectedColumns(){
-      selectedColumns = [];
-      document.querySelectorAll('.column-checkbox input:checked').forEach(cb => selectedColumns.push(cb.value));
-      if (filteredData.length) displayResults(filteredData);
-    }
-
-    function toggleColumnSelector(){
-      const selector = document.getElementById('columnSelector');
-      selector.style.display = selector.style.display === 'none' ? 'block' : 'none';
     }
 
     function applyFilter(type){
@@ -374,9 +415,7 @@
           showToast(`Показаны все ${filteredData.length} записей`,'info');
           break;
       }
-      // сброс сортировки при смене фильтра
-      sortColumn = '';
-      sortDirection = 'asc';
+      sortColumn=''; sortDirection='asc';
       displayResults(filteredData);
     }
 
@@ -396,42 +435,53 @@
       }
       noResults.style.display = 'none';
 
-      const displayCols = selectedColumns.filter(col => document.querySelector(`input[value="${col}"]:checked`));
+      const displayCols = selectedColumns.filter(col => document.querySelector(`#columnsGrid input[value="${col}"]`)?.checked);
       tableHead.innerHTML = '<tr>' + displayCols.map(col => `<th onclick="sortTable('${col}')">${col} ${getSortIcon(col)}</th>`).join('') + '</tr>';
 
-      tableBody.innerHTML = data.map(row =>
-        `<tr>${displayCols.map(col => `<td>${formatCellValue(row[col]) ?? ''}</td>`).join('')}</tr>`
-      ).join('');
-    }
+      // подсветка?
+      const highlightOn = document.getElementById('kwHighlight')?.checked;
+      const { includeRegs, excludeRegs, includeWords, strict } = currentSearchContext || {};
 
-    function formatCellValue(val){
-      if (val === null || val === undefined) return '';
-      if (typeof val === 'number' && !isNaN(val)) return formatMoney(val);
-      return String(val);
-    }
-
-    function formatMoney(amount){
-      if (!amount) return '—';
-      return new Intl.NumberFormat('ru-RU',{style:'currency',currency:'RUB',minimumFractionDigits:0,maximumFractionDigits:2}).format(amount);
+      tableBody.innerHTML = data.map(row => {
+        const tds = displayCols.map(col => {
+          const v = row[col];
+          let text = v===null||v===undefined ? '' : String(v);
+          if (highlightOn && includeWords && includeWords.length){
+            if (strict){
+              // строгие — набор регекспов includeRegs
+              includeRegs.forEach(re => {
+                text = text.replace(re, (m, p1, p2, p3) => `${p1}<mark>${p2}</mark>${p3}`);
+              });
+            } else {
+              includeWords.forEach(w => {
+                if (!w) return;
+                const re = new RegExp(escapeRegExp(w), 'gi');
+                text = text.replace(re, (m)=>`<mark>${m}</mark>`);
+              });
+            }
+          }
+          return `<td>${text}</td>`;
+        }).join('');
+        return `<tr>${tds}</tr>`;
+      }).join('');
     }
 
     function getSortIcon(column){ if (sortColumn !== column) return '↕️'; return sortDirection === 'asc' ? '↑' : '↓'; }
 
     function sortTable(column){
-      if (sortColumn === column){ sortDirection = (sortDirection === 'asc' ? 'desc' : 'asc'); }
+      if (sortColumn === column) sortDirection = (sortDirection === 'asc' ? 'desc' : 'asc');
       else { sortColumn = column; sortDirection = 'asc'; }
       filteredData.sort((a,b) => compareValues(a[column], b[column]));
       displayResults(filteredData);
     }
 
-    function compareValues(a, b){
-      let av = a, bv = b;
-      if (av === null || av === undefined) av = '';
-      if (bv === null || bv === undefined) bv = '';
-      if (typeof av === 'number' && typeof bv === 'number')
-        return (sortDirection === 'asc' ? av - bv : bv - av);
-      av = String(av).toLowerCase(); bv = String(bv).toLowerCase();
-      return (sortDirection === 'asc' ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1));
+    function compareValues(a,b){
+      let av=a, bv=b;
+      if (av===null||av===undefined) av='';
+      if (bv===null||bv===undefined) bv='';
+      if (typeof av==='number' && typeof bv==='number') return (sortDirection==='asc'? av-bv : bv-av);
+      av=String(av).toLowerCase(); bv=String(bv).toLowerCase();
+      return (sortDirection==='asc' ? (av>bv?1:-1):(av<bv?1:-1));
     }
 
     function searchTable(term){
@@ -441,138 +491,288 @@
       displayResults(res);
     }
 
-    function exportToCSV(){
-      if (!filteredData.length){ showToast('Нет данных для экспорта','error'); return; }
-      const displayCols = selectedColumns.filter(col => document.querySelector(`input[value="${col}"]:checked`));
-      const exportData = filteredData.map(row => { const out = {}; displayCols.forEach(c => out[c] = row[c]); return out; });
-      const csv = Papa.unparse(exportData, { delimiter:';', header:true });
-      const BOM = '\uFEFF';
-      const blob = new Blob([BOM + csv], { type:'text/csv;charset=utf-8;' });
-      const link = document.createElement('a'); const url = URL.createObjectURL(blob);
-      const dateStr = new Date().toLocaleDateString('ru-RU').replace(/\./g,'-');
-      const filterName = currentFilter === 'street' ? 'УличноеОсвещение'
-                        : currentFilter === 'smr'    ? 'СМР'
-                        : currentFilter === 'keyword'? 'КлючевыеСлова'
-                        : 'Все';
-      link.href = url; link.download = `Реестр_${filterName}_${dateStr}.csv`; link.style.visibility='hidden';
-      document.body.appendChild(link); link.click(); document.body.removeChild(link);
-      showToast(`Экспортировано ${exportData.length} записей`,'success');
-    }
-
-    function showToast(msg, type='info'){
-      const toast = document.getElementById('toast');
-      toast.textContent = msg; toast.className = 'toast';
-      if (type === 'success') toast.classList.add('success');
-      if (type === 'error') toast.classList.add('error');
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 2500);
-    }
-
-    // ====== ПОИСК ПО КЛЮЧЕВЫМ СЛОВАМ ======
-    function addKeywordField(){
-      const wrap = document.getElementById('keywordInputs');
+    // ===== КЛЮЧЕВЫЕ СЛОВА =====
+    function addKeywordField(kind){
+      const wrap = document.getElementById(kind==='exclude' ? 'keywordExclude' : 'keywordInclude');
       const input = document.createElement('input');
-      input.type = 'text';
-      input.className = 'keyword-input';
-      input.placeholder = 'Введите ключевое слово или фразу';
-      wrap.appendChild(input);
-      input.focus();
+      input.type='text'; input.className='keyword-input';
+      input.placeholder = kind==='exclude' ? 'Слово/фраза для исключения' : 'Ключевое слово/фраза (включить)';
+      wrap.appendChild(input); input.focus();
     }
+
+    let currentSearchContext = null; // для подсветки
 
     function performKeywordSearch(){
-      const inputs = document.querySelectorAll('.keyword-input');
-      const keywords = [];
-      inputs.forEach(i => {
-        const t = i.value.trim().toLowerCase();
-        if (t) keywords.push(t);
-      });
-      if (!keywords.length){ showToast('Введите хотя бы одно ключевое слово','error'); return; }
+      const include = [...document.querySelectorAll('#keywordInclude .keyword-input')].map(i=>i.value.trim().toLowerCase()).filter(Boolean);
+      const exclude = [...document.querySelectorAll('#keywordExclude .keyword-input')].map(i=>i.value.trim().toLowerCase()).filter(Boolean);
 
-      const logic = document.querySelector('input[name="kwLogic"]:checked')?.value || 'OR';
-      const strict = document.getElementById('kwStrict').checked;
+      if (!include.length && !exclude.length){
+        showToast('Добавьте хотя бы одно ключевое слово (включить/исключить)','error'); return;
+      }
 
-      const cols = Array.from(keywordSearchColumns);
+      const logic   = document.querySelector('input[name="kwLogic"]:checked')?.value || 'OR';
+      const strict  = document.getElementById('kwStrict').checked;
+      const cols    = Array.from(keywordSearchColumns);
       if (!cols.length){ showToast('Выберите хотя бы одну колонку для поиска','error'); return; }
+
+      // Подготовка регекспов для строгого режима
+      const incRegs = strict ? include.map(k => buildWordRegexForMark(k)) : null;
+      const excRegs = strict ? exclude.map(k => buildWordRegex(k)) : null;
 
       currentFilter = 'keyword';
 
-      // Подготовка регекспов для строгого режима
-      const regs = strict ? keywords.map(k => buildWordRegex(k)) : null;
+      filteredData = allData.filter(row => rowMatchesComplex(row, cols, include, exclude, strict, logic, incRegs, excRegs));
+      sortColumn=''; sortDirection='asc';
 
-      filteredData = allData.filter(row => rowMatches(row, cols, keywords, strict, logic, regs));
+      // сохранить контекст для подсветки
+      currentSearchContext = {
+        includeRegs: incRegs,
+        excludeRegs: excRegs,
+        includeWords: include,
+        strict
+      };
 
-      // сброс сортировки
-      sortColumn = '';
-      sortDirection = 'asc';
-
-      showToast(`Найдено ${filteredData.length} записей по ключевым словам`,'success');
+      showToast(`Найдено ${filteredData.length} записей по условиям поиска`,'success');
       displayResults(filteredData);
     }
 
-    function rowMatches(row, cols, keywords, strict, logic, regs){
-      // значения по выбранным колонкам в нижнем регистре
+    function rowMatchesComplex(row, cols, include, exclude, strict, logic, incRegs, excRegs){
       const values = cols.map(c => String(row[c] ?? '').toLowerCase());
 
-      const matchKeyword = (kw, idx) => {
-        if (strict){
-          const re = regs ? regs[idx] : buildWordRegex(kw);
-          return values.some(v => re.test(v));
-        } else {
-          return values.some(v => v.includes(kw));
-        }
-      };
+      const includesOK = include.length ? (
+        logic==='AND' ? include.every((kw, i) => anyMatch(values, kw, strict, incRegs?.[i])) :
+                        include.some((kw, i) => anyMatch(values, kw, strict, incRegs?.[i]))
+      ) : true;
 
-      if (logic === 'AND'){
-        return keywords.every((kw, i) => matchKeyword(kw, i));
-      } else { // OR
-        return keywords.some((kw, i) => matchKeyword(kw, i));
+      if (!includesOK) return false;
+
+      const excludesOK = exclude.length ? exclude.every((kw, i) => !anyMatch(values, kw, strict, excRegs?.[i])) : true;
+
+      return includesOK && excludesOK;
+    }
+
+    function anyMatch(values, kw, strict, reStrict){
+      if (strict){
+        const re = reStrict || buildWordRegex(kw);
+        return values.some(v => re.test(v));
+      } else {
+        return values.some(v => v.includes(kw));
       }
     }
 
-    // Построение регекспа для строгого совпадения «целого слова» (работает с кириллицей)
+    // строгая граница слова — регексп
     function buildWordRegex(kw){
       const escaped = escapeRegExp(kw);
-      // «Граница» — не буква/цифра/подчёркивание по обе стороны (Unicode класс)
       const pattern = `(^|[^\\p{L}\\p{N}_])${escaped}([^\\p{L}\\p{N}_]|$)`;
-      return new RegExp(pattern, 'iu');
+      return new RegExp(pattern,'iu');
+    }
+    // для подсветки (захватываем группы до/после и саму середину)
+    function buildWordRegexForMark(kw){
+      const escaped = escapeRegExp(kw);
+      const pattern = `(^|[^\\p{L}\\p{N}_])(${escaped})([^\\p{L}\\p{N}_]|$)`;
+      return new RegExp(pattern,'giu');
+    }
+    function escapeRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+
+    // ===== ПРЕСЕТЫ =====
+    function savePreset(){
+      const name = document.getElementById('presetName').value.trim();
+      if (!name){ showToast('Укажите название пресета','error'); return; }
+
+      const include = [...document.querySelectorAll('#keywordInclude .keyword-input')].map(i=>i.value.trim()).filter(Boolean);
+      const exclude = [...document.querySelectorAll('#keywordExclude .keyword-input')].map(i=>i.value.trim()).filter(Boolean);
+      const logic   = document.querySelector('input[name="kwLogic"]:checked')?.value || 'OR';
+      const strict  = document.getElementById('kwStrict').checked;
+      const highlight = document.getElementById('kwHighlight').checked;
+      const cols   = Array.from(keywordSearchColumns);
+
+      const preset = { include, exclude, logic, strict, highlight, cols };
+      const all = JSON.parse(localStorage.getItem('zak_presets')||'{}');
+      all[name] = preset;
+      localStorage.setItem('zak_presets', JSON.stringify(all));
+      hydratePresetSelect(name);
+      showToast('Пресет сохранён','success');
     }
 
-    function escapeRegExp(s){
-      return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    function hydratePresetSelect(selectName){
+      const sel = document.getElementById('presetSelect');
+      const all = JSON.parse(localStorage.getItem('zak_presets')||'{}');
+      sel.innerHTML = Object.keys(all).length ? Object.keys(all).map(n=>`<option>${n}</option>`).join('') : '';
+      if (selectName) sel.value = selectName;
     }
 
-    // ====== СБРОС ======
+    function loadPreset(){
+      const sel = document.getElementById('presetSelect');
+      const name = sel.value;
+      if (!name){ showToast('Нет выбранного пресета','error'); return; }
+      const all = JSON.parse(localStorage.getItem('zak_presets')||'{}');
+      const p = all[name]; if (!p) return;
+
+      // заполнить поля
+      const incWrap = document.getElementById('keywordInclude'); incWrap.innerHTML='';
+      const excWrap = document.getElementById('keywordExclude'); excWrap.innerHTML='';
+      (p.include.length? p.include : ['']).forEach(v=>{
+        const i=document.createElement('input'); i.type='text'; i.className='keyword-input'; i.value=v; i.placeholder='Ключевое слово/фраза (включить)'; incWrap.appendChild(i);
+      });
+      (p.exclude.length? p.exclude : ['']).forEach(v=>{
+        const i=document.createElement('input'); i.type='text'; i.className='keyword-input'; i.value=v; i.placeholder='Слово/фраза для исключения'; excWrap.appendChild(i);
+      });
+
+      document.querySelector(`input[name="kwLogic"][value="${p.logic||'OR'}"]`).checked = true;
+      document.getElementById('kwStrict').checked = !!p.strict;
+      document.getElementById('kwHighlight').checked = !!p.highlight;
+
+      // колонки
+      keywordSearchColumns = new Set(p.cols||[]);
+      setupKeywordColumnsChips(); // перерисовать чипсы
+      // отметить чипсы по выбранным
+      Array.from(document.querySelectorAll('#kwColumns input[type="checkbox"]')).forEach(cb=>{
+        cb.checked = keywordSearchColumns.has(cb.value);
+      });
+
+      showToast('Пресет загружен','success');
+    }
+
+    function deletePreset(){
+      const sel = document.getElementById('presetSelect');
+      const name = sel.value;
+      if (!name){ showToast('Нет выбранного пресета','error'); return; }
+      const all = JSON.parse(localStorage.getItem('zak_presets')||'{}');
+      delete all[name];
+      localStorage.setItem('zak_presets', JSON.stringify(all));
+      hydratePresetSelect();
+      showToast('Пресет удалён','success');
+    }
+
+    // ===== ДЕДУПЛИКАЦИЯ =====
+    function deduplicate(){
+      const key = 'Реестровый номер закупки';
+      if (!allData.length || !(key in allData[0])){ showToast('Колонка реестрового номера не найдена','error'); return; }
+      const seen = new Set(); const newAll = []; let removed = 0;
+      for (const row of allData){
+        const k = row[key];
+        const uid = (k===undefined||k===null) ? `__no_key__${Math.random()}` : String(k).trim();
+        if (seen.has(uid)){ removed++; continue; }
+        seen.add(uid); newAll.push(row);
+      }
+      allData = newAll;
+      filteredData = [...allData];
+      updateStats(); displayResults(filteredData);
+      showToast(`Удалено дубликатов: ${removed}`,'success');
+    }
+
+    // ===== ПИВОТ =====
+    function hydratePivotSelectors(){
+      const selGroup = document.getElementById('pivotGroupBy');
+      const cols = allData.length ? Object.keys(allData[0]) : [];
+      selGroup.innerHTML = cols.map(c=>`<option>${c}</option>`).join('');
+      const valSel = document.getElementById('pivotValue');
+      // гарантируем наличие дефолтной колонки в списке
+      const v = 'Начальная (максимальная) цена контракта';
+      if (!cols.includes(v)){
+        valSel.innerHTML = cols.map(c=>`<option>${c}</option>`).join('');
+      }
+    }
+
+    function buildPivot(){
+      if (!filteredData.length){ document.getElementById('pivotTable').innerHTML=''; return; }
+      const groupCol = document.getElementById('pivotGroupBy').value;
+      const valueCol = document.getElementById('pivotValue').value;
+
+      const map = new Map();
+      for (const row of filteredData){
+        const g = String(row[groupCol] ?? '');
+        const val = Number(row[valueCol]) || 0;
+        if (!map.has(g)) map.set(g, {count:0, sum:0});
+        const o = map.get(g); o.count++; o.sum += val;
+      }
+      const rows = [...map.entries()].sort((a,b)=>b[1].sum - a[1].sum);
+
+      const html = `
+        <div style="overflow:auto;">
+          <table style="width:100%;border-collapse:separate;border-spacing:0;">
+            <thead>
+              <tr>
+                <th style="background:#eef2ff;padding:10px;text-align:left;">Группа: ${groupCol}</th>
+                <th style="background:#eef2ff;padding:10px;text-align:right;">Count</th>
+                <th style="background:#eef2ff;padding:10px;text-align:right;">Sum(${valueCol})</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map(([g,v])=>`
+                <tr>
+                  <td style="padding:8px;border-bottom:1px solid var(--border);">${g}</td>
+                  <td style="padding:8px;border-bottom:1px solid var(--border);text-align:right;">${v.count}</td>
+                  <td style="padding:8px;border-bottom:1px solid var(--border);text-align:right;">${formatMoney(v.sum)}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`;
+      document.getElementById('pivotTable').innerHTML = html;
+    }
+
+    // ===== ЭКСПОРТЫ =====
+    function exportToCSV(){
+      if (!filteredData.length){ showToast('Нет данных для экспорта','error'); return; }
+      const cols = selectedColumns.filter(c => document.querySelector(`#columnsGrid input[value="${c}"]`)?.checked);
+      const out = filteredData.map(r => Object.fromEntries(cols.map(c=>[c,r[c]])));
+      const csv = Papa.unparse(out,{delimiter:';',header:true});
+      const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      const dateStr = new Date().toLocaleDateString('ru-RU').replace(/\./g,'-');
+      const filterName = currentFilter==='street'?'УличноеОсвещение': currentFilter==='smr'?'СМР': currentFilter==='keyword'?'КлючевыеСлова':'Все';
+      a.download = `Реестр_${filterName}_${dateStr}.csv`;
+      document.body.appendChild(a); a.click(); a.remove();
+      showToast('CSV сформирован','success');
+    }
+
+    function exportToXLSX(){
+      if (!filteredData.length){ showToast('Нет данных для экспорта','error'); return; }
+      const cols = selectedColumns.filter(c => document.querySelector(`#columnsGrid input[value="${c}"]`)?.checked);
+      const out = filteredData.map(r => Object.fromEntries(cols.map(c=>[c,r[c]])));
+      const ws = XLSX.utils.json_to_sheet(out);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Реестр');
+      const dateStr = new Date().toLocaleDateString('ru-RU').replace(/\./g,'-');
+      const filterName = currentFilter==='street'?'УличноеОсвещение': currentFilter==='smr'?'СМР': currentFilter==='keyword'?'КлючевыеСлова':'Все';
+      XLSX.writeFile(wb, `Реестр_${filterName}_${dateStr}.xlsx`);
+      showToast('XLSX сформирован','success');
+    }
+
+    // ===== СБРОС =====
     function resetFilters(){
-      // Полный набор
       filteredData = [...allData];
       currentFilter = 'all';
 
-      // Очистка полей ключевых слов
-      const keywordInputs = document.getElementById('keywordInputs');
-      keywordInputs.innerHTML = '<input type="text" class="keyword-input" placeholder="Введите ключевое слово или фразу">';
-
-      // Сброс выбора колонок поиска к дефолту
-      setupKeywordColumnsChips();
-
-      // Сброс логики И/ИЛИ и строгого режима
+      // очистка ключевых слов
+      const inc = document.getElementById('keywordInclude'); inc.innerHTML='<input type="text" class="keyword-input" placeholder="Ключевое слово/фраза (включить)">';
+      const exc = document.getElementById('keywordExclude'); exc.innerHTML='<input type="text" class="keyword-input" placeholder="Слово/фраза для исключения">';
       document.querySelector('input[name="kwLogic"][value="OR"]').checked = true;
       document.getElementById('kwStrict').checked = false;
+      document.getElementById('kwHighlight').checked = false;
 
-      // Очистка быстрого поиска по таблице
-      const tableSearch = document.getElementById('searchInput');
-      if (tableSearch) tableSearch.value = '';
+      // колонки поиска — к дефолту
+      setupKeywordColumnsChips();
 
-      // Сброс сортировки
-      sortColumn = '';
-      sortDirection = 'asc';
+      // строковый поиск
+      const s = document.getElementById('searchInput'); if (s) s.value='';
 
-      // Спрятать селектор колонок (если был открыт)
-      const selector = document.getElementById('columnSelector');
-      if (selector) selector.style.display = 'none';
+      // сортировка
+      sortColumn=''; sortDirection='asc';
+
+      // селектор колонок
+      const selector = document.getElementById('columnSelector'); if (selector) selector.style.display='none';
 
       updateStats();
       displayResults(filteredData);
-      showToast('Фильтры и поиск по ключевым словам сброшены','info');
+      showToast('Сброс выполнен','info');
+    }
+
+    // ===== УТИЛЫ =====
+    function formatMoney(x){
+      if (!x) return '—';
+      return new Intl.NumberFormat('ru-RU',{style:'currency',currency:'RUB',minimumFractionDigits:0,maximumFractionDigits:2}).format(x);
     }
   </script>
 </body>
